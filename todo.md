@@ -3,13 +3,18 @@
 - [x] watch multiple files
 - [x] parse JSX into AST
 - [ ] extract HTML and JS from AST
+- [ ] handle runtime functions usage in AST (mark nodes that uses .get to implement client side logic later)
 
 ---
-### todo imediate
-- [x] change fn signature to receive js-string and jsx-string separately
-- [ ] create buffer (a node is only a JS node only if no JSX node is direct or indirect child of it) to temporarily store JS/JSX nodes
-- import statement can become JSX after
-- [ ] parar de construir string do zero e reaproveitar o SWC_CODEGEN
+### todo sub
+- [ ] traverse JSX element (basic parts)
+- [ ] map event params (e.g. onClick) to event handlers from the stmt vector
+	- errors [mismatched handler names, undefined handlers, top level async/await]
+- [ ] build param list representation
+	- errors [mismatched param names, undefined params, top level async/await]
+- [ ] generate HTML template from JSX expression
+	- [ ] traverse JSX expression
+	- [ ] generate unique ids for elements that use client side logic
 
 
 
