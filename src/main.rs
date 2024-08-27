@@ -1,9 +1,7 @@
-use core::fmt;
 use std::rc::Rc;
-use std::thread::panicking;
 use hotwatch as hw;
 use serde_json;
-use std::{fmt::Debug, fs};
+use std::fs;
 use std::io::Error;
 use std::path;
 use std::string::String;
@@ -14,6 +12,25 @@ use swc_ecma_parser as Parser;
 use swc_ecma_codegen as Gen;
 use swc_ecma_visit as Visit;
 use Swc::source_map as Sm;
+
+mod discover;
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ErrorMsg {
+	pub message: String,
+}
+impl core::fmt::Display for ErrorMsg {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "{}\n", self.message)
+	}
+}
+impl ErrorMsg {
+	pub fn new(str: &str) -> Self {
+		Self { message: String::from(str) }
+	}
+	pub fn panic(&self) {
+		panic!("{}", self.message);
+	}
+}
 
 
 fn setup_watchers(watcher: &mut hw::blocking::Hotwatch) -> Result<(), Error> {
@@ -46,43 +63,9 @@ fn main() {
     }
 
     //let _cm: Swc::sync::Lrc<Swc::SourceMap> = Swc::sync::Lrc::new(Swc::SourceMap::default());
-    let code = r#"
-const num = reactive(0);
-const increase = () => {
-	num.set(x => x + 1);
-}
-const decrease = () => {
-	if (num.get() > 0) {
-		num.set(x => x - 1);
-	}
-}
-export default function MyComponent({ text }) {
-	return (
-		<div className="d-flex flex-col" disabled>
-			<h1>This is my counter!</h1>
-			<ControllBtn text="-" onClick={decrease} />
-			<p>{num.get()}</p>
-			<ControllBtn text="+" onClick={increase} />
-			<p>{text}</p>
-			<span>{SOME_VAL}</span>
-		</div>
-	)	
-}
-"#;
+    let code = discover::get_sample_code();
 	// parse
-    let syntax = Parser::Syntax::Es(Parser::EsSyntax {
-        jsx: true,
-        ..Default::default()
-    });
-    let target = Ast::EsVersion::Es2022;
-    let input = Parser::StringInput::new(
-        code,
-        Sm::SmallPos::from_usize(0),
-        Sm::SmallPos::from_usize(0),
-    );
-    let lexer = Parser::lexer::Lexer::new(syntax, target, input, None);
-    let mut parser = Parser::Parser::new_from(lexer);
-    let program = parser.parse_program();
+    let program = discover::build_ast(code);
     if let Ok(ast) = program {
         let json_string = serde_json::to_string_pretty(&ast).unwrap();
         fs::write(path::Path::new("./ast.json"), json_string).expect("Failed to write to file");
@@ -90,39 +73,18 @@ export default function MyComponent({ text }) {
 		if !ast.is_module() {
 			panic!("Expecting at least 1 module statement of type default export");
 		}
-		let mut module_item: Option<Ast::ModuleItem> = None;
-		let mut stmts: Vec<Ast::Stmt> = Vec::new();
-		for node in ast.clone().module().unwrap().body {
-			if !module_item.is_none() && node.is_module_decl() {
-				panic!("Expecting 1 module statement of type default export");
-			}
-			if node.is_module_decl() {
-				module_item = Some(node);
-			} else {
-				stmts.push(node.as_stmt().unwrap().clone());
-			}
+		let (modules, stmts) = discover::filter_module_decl_variants(&ast);
+		let default_export = discover::get_default_export_decl(modules);
+		let fn_expr = discover::get_default_export_fn(default_export);
+		let fn_body = discover::get_fn_body(fn_expr);
+		let fn_return = discover::get_fn_return_stmt(fn_body);
+		let jsx_expr = discover::get_jsx_expr(fn_return);
+		if jsx_expr.is_err() {
+			panic!("{}", jsx_expr.unwrap_err().message);
+		} else {
+			println!("no errors")
 		}
-		if module_item.is_some() {
-			let module_item = module_item.clone().unwrap().module_decl();
-			if module_item.is_none() {
-				panic!("Expecting 1 module statement of type default export");
-			}
-			match module_item.unwrap() {
-				Ast::ModuleDecl::ExportDefaultDecl(decl) => {
-					match decl.decl {
-						Ast::DefaultDecl::Fn(fn_decl) => {
-							parse_fn(fn_decl);
-						},
-						_ => {
-							panic!("Expecting 1 module statement of type default export");
-						}
-					}
-				},
-				_ => {
-					panic!("Expecting 1 module statement of type default export");
-				}
-			}
-		}
+		
 		//emit js
 		let mut conf = Gen::Config::default();
 		conf.target = Ast::EsVersion::Es2022;

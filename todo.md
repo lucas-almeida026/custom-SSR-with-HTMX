@@ -10,3 +10,6 @@
 - [ ] create buffer (a node is only a JS node only if no JSX node is direct or indirect child of it) to temporarily store JS/JSX nodes
 - import statement can become JSX after
 - [ ] parar de construir string do zero e reaproveitar o SWC_CODEGEN
+
+
+
