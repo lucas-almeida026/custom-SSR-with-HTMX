@@ -1,0 +1,4 @@
+- one and only one default export per file
+- no imports neither non-default exports
+- the default export must be of type function and must return JSX
+- can not use lib functions inside component functions
