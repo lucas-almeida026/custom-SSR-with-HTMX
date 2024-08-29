@@ -82,7 +82,7 @@ fn main() {
 		if jsx_expr.is_err() {
 			panic!("{}", jsx_expr.unwrap_err().message);
 		} else {
-			println!("no errors")
+			println!("{}", discover::traverse_jsx_tree(jsx_expr.unwrap(), 0));
 		}
 		
 		//emit js

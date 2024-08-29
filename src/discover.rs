@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use std::{io::BufRead, ops::Deref};
 
 use crate::ErrorMsg;
 use swc_common as Swc;
@@ -106,6 +106,101 @@ pub fn get_jsx_expr(stmt: Result<Ast::ReturnStmt, ErrorMsg>) -> Result<Ast::JSXE
 			None => Err(ErrorMsg::new("Expeting exported function return JSX")),
 		},
 		Err(e) => Err(e),
+	}
+}
+
+fn with_tabs(str: String, tab: i32) -> String {
+	let mut buffer = String::from("\n");
+	for _ in 0..tab {
+		buffer.push(' ');
+		buffer.push(' ');
+	}
+	buffer.push_str(&str);
+	return buffer;
+}
+
+pub fn traverse_jsx_tree(e: Ast::JSXElement, tab: i32) -> String {
+	let mut buffer = traverse_opening(e.opening, tab);
+	for child in e.children {
+		match child {
+			Ast::JSXElementChild::JSXElement(e) => buffer.push_str(&traverse_jsx_tree(*e, tab + 2)),
+			Ast::JSXElementChild::JSXText(_) => buffer.push_str("unhandled jsx text"),
+			Ast::JSXElementChild::JSXExprContainer(_) => buffer.push_str("unhandled jsx expr container"),
+			Ast::JSXElementChild::JSXSpreadChild(_) => buffer.push_str("unhandled jsx spread child"),
+			Ast::JSXElementChild::JSXFragment(_) => buffer.push_str("unhandled jsx fragment"),
+		}
+	}
+	let closing = traverse_closing(e.closing);
+	buffer.push_str(&closing);
+	buffer.push('\n');
+	return with_tabs(buffer, tab);
+}
+
+pub fn traverse_opening(e: Ast::JSXOpeningElement, tab: i32) -> String {
+	let mut buffer = String::new();
+	buffer.push_str(&with_tabs(parse_name(e.name), tab));
+	buffer.push_str(": ");
+	for attr in e.attrs {
+		buffer.push_str(&parse_attr(attr));
+	}
+	// return with_tabs(e..to_string(), tab);
+	return buffer;
+}
+
+pub fn traverse_closing(e: Option<Ast::JSXClosingElement>) -> String {
+	let mut buffer = String::from("/");
+	if e.is_some() {
+		buffer.push_str(&parse_name(e.unwrap().name));
+	}
+	return buffer;
+}
+
+pub fn parse_name(e: Ast::JSXElementName) -> String {
+	match e {
+		Ast::JSXElementName::Ident(ident) => ident.sym.to_string(),
+		_ => "unknown opening name".to_string(),
+	}
+}
+
+pub fn parse_attr(e: Ast::JSXAttrOrSpread) -> String {
+	let mut buffer = String::new();
+	match e {
+		Ast::JSXAttrOrSpread::JSXAttr(attr) => {
+			buffer.push_str(&parse_attr_name(attr.name));
+			if attr.value.is_some() {
+				buffer.push_str(" = ");
+			}
+			buffer.push_str(&parse_attr_value(attr.value));
+			buffer.push_str(", ");
+		},
+		_ => buffer.push_str("unhandled attr of type spread"),
+	}
+	return buffer;
+}
+
+pub fn parse_attr_name(e: Ast::JSXAttrName) -> String {
+	match e {
+		Ast::JSXAttrName::Ident(ident) => ident.sym.to_string(),
+		_ => "unknown attr name".to_string(),
+	}
+}
+
+pub fn parse_attr_value(e: Option<Ast::JSXAttrValue>) -> String {
+	match e {
+		Some(value) => match value {
+			Ast::JSXAttrValue::Lit(lit) => parse_lit(lit),
+			Ast::JSXAttrValue::JSXFragment(_) => "JSXFragment".to_string(),
+			Ast::JSXAttrValue::JSXExprContainer(_) => "JSXExprContainer".to_string(),
+			Ast::JSXAttrValue::JSXElement(_) => "JSXElement".to_string(),
+		},
+		_ => "".to_string(),
+	}
+}
+
+pub fn parse_lit(e: Ast::Lit) -> String {
+	match e {
+		Ast::Lit::Str(str) => str.value.to_string(),
+		_ => "unknown lit".to_string(),
 	}
 }
 
