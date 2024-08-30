@@ -16,5 +16,12 @@
 	- [ ] traverse JSX expression
 	- [ ] generate unique ids for elements that use client side logic
 
+---
+- generate component tree at run time
+- generate HTML templates at build time and populate them at run time
 
-
+---
+- conditional rendering
+- listing
+- conditional attributes
+- conditional attribute values (class, style, etc.)
