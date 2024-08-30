@@ -82,7 +82,9 @@ fn main() {
 		if jsx_expr.is_err() {
 			panic!("{}", jsx_expr.unwrap_err().message);
 		} else {
-			println!("{}", discover::traverse_jsx_tree(jsx_expr.unwrap(), 0));
+			let parsed_html = discover::traverse_jsx_tree(jsx_expr.unwrap(), 0);
+			println!("{}", parsed_html.clone());
+			fs::write("./component.html", parsed_html).expect("Failed to write to file");
 		}
 		
 		//emit js

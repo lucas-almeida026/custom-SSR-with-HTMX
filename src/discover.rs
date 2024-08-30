@@ -66,7 +66,15 @@ pub fn get_default_export_fn(decl: Result<Ast::ExportDefaultDecl, ErrorMsg>) -> 
 	}
 }
 
+pub fn get_fn_params(fn_expr: Result<Ast::FnExpr, ErrorMsg>) -> Result<Vec<Ast::Param>, ErrorMsg> {
+	match fn_expr {
+		Ok(fn_expr) => Ok(fn_expr.function.params),
+		Err(e) => Err(e),
+	}
+}
+
 pub fn get_fn_body(fn_expr: Result<Ast::FnExpr, ErrorMsg>) -> Result<Ast::BlockStmt, ErrorMsg> {
+	println!("fn params: {:?}", fn_expr.clone().unwrap().function.params);
 	match fn_expr {
 		Ok(fn_expr) => match fn_expr.function.body {
 			Some(body) => Ok(body),
@@ -110,9 +118,8 @@ pub fn get_jsx_expr(stmt: Result<Ast::ReturnStmt, ErrorMsg>) -> Result<Ast::JSXE
 }
 
 fn with_tabs(str: String, tab: i32) -> String {
-	let mut buffer = String::from("\n");
+	let mut buffer = String::from("");
 	for _ in 0..tab {
-		buffer.push(' ');
 		buffer.push(' ');
 	}
 	buffer.push_str(&str);
@@ -121,38 +128,51 @@ fn with_tabs(str: String, tab: i32) -> String {
 
 pub fn traverse_jsx_tree(e: Ast::JSXElement, tab: i32) -> String {
 	let mut buffer = traverse_opening(e.opening, tab);
-	for child in e.children {
+	let closing = traverse_closing(e.closing);
+	if closing.is_none() {
+		buffer.push('/');
+		buffer.push('>');
+	} else {
+		buffer.push('>');
+	}
+	for (idx, child) in e.children.iter().enumerate() {
 		match child {
-			Ast::JSXElementChild::JSXElement(e) => buffer.push_str(&traverse_jsx_tree(*e, tab + 2)),
-			Ast::JSXElementChild::JSXText(_) => buffer.push_str("unhandled jsx text"),
+			Ast::JSXElementChild::JSXElement(e) => {
+				if idx == 1 {
+					buffer.push('\n');
+				}
+				buffer.push_str(&traverse_jsx_tree(e.deref().clone(), tab + 2));
+			},
+			Ast::JSXElementChild::JSXText(e) => buffer.push_str(&e.value.trim()),
 			Ast::JSXElementChild::JSXExprContainer(_) => buffer.push_str("unhandled jsx expr container"),
 			Ast::JSXElementChild::JSXSpreadChild(_) => buffer.push_str("unhandled jsx spread child"),
 			Ast::JSXElementChild::JSXFragment(_) => buffer.push_str("unhandled jsx fragment"),
 		}
 	}
-	let closing = traverse_closing(e.closing);
-	buffer.push_str(&closing);
+	buffer.push_str(&closing.clone().unwrap_or("".to_string()));
 	buffer.push('\n');
 	return with_tabs(buffer, tab);
 }
 
 pub fn traverse_opening(e: Ast::JSXOpeningElement, tab: i32) -> String {
-	let mut buffer = String::new();
-	buffer.push_str(&with_tabs(parse_name(e.name), tab));
-	buffer.push_str(": ");
+	let mut buffer = String::from(&with_tabs("<".to_string(), tab));
+	buffer.push_str(&parse_name(e.name));
 	for attr in e.attrs {
 		buffer.push_str(&parse_attr(attr));
 	}
-	// return with_tabs(e..to_string(), tab);
 	return buffer;
 }
 
-pub fn traverse_closing(e: Option<Ast::JSXClosingElement>) -> String {
-	let mut buffer = String::from("/");
-	if e.is_some() {
-		buffer.push_str(&parse_name(e.unwrap().name));
+pub fn traverse_closing(e: Option<Ast::JSXClosingElement>) -> Option<String> {
+	match e {
+		Some(e) => {
+			let mut buffer = "</".to_string();
+			buffer.push_str(&parse_name(e.name));
+			buffer.push('>');
+			return Some(buffer);
+		},
+		None => return None,
 	}
-	return buffer;
 }
 
 pub fn parse_name(e: Ast::JSXElementName) -> String {
@@ -163,17 +183,16 @@ pub fn parse_name(e: Ast::JSXElementName) -> String {
 }
 
 pub fn parse_attr(e: Ast::JSXAttrOrSpread) -> String {
-	let mut buffer = String::new();
+	let mut buffer = String::from(" ");
 	match e {
 		Ast::JSXAttrOrSpread::JSXAttr(attr) => {
 			buffer.push_str(&parse_attr_name(attr.name));
 			if attr.value.is_some() {
-				buffer.push_str(" = ");
+				buffer.push_str("=");
 			}
 			buffer.push_str(&parse_attr_value(attr.value));
-			buffer.push_str(", ");
 		},
-		_ => buffer.push_str("unhandled attr of type spread"),
+		_ => buffer.push_str("\"unhandled attr of type spread\""),
 	}
 	return buffer;
 }
@@ -199,7 +218,7 @@ pub fn parse_attr_value(e: Option<Ast::JSXAttrValue>) -> String {
 
 pub fn parse_lit(e: Ast::Lit) -> String {
 	match e {
-		Ast::Lit::Str(str) => str.value.to_string(),
+		Ast::Lit::Str(str) => format!("{:?}", str.value.to_string()),
 		_ => "unknown lit".to_string(),
 	}
 }
