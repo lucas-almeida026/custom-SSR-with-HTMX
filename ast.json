@@ -2,14 +2,14 @@
   "type": "Module",
   "span": {
     "start": 1,
-    "end": 74
+    "end": 92
   },
   "body": [
     {
       "type": "ExportDefaultDeclaration",
       "span": {
         "start": 1,
-        "end": 74
+        "end": 92
       },
       "decl": {
         "type": "FunctionExpression",
@@ -66,14 +66,14 @@
         "decorators": [],
         "span": {
           "start": 16,
-          "end": 74
+          "end": 92
         },
         "ctxt": 0,
         "body": {
           "type": "BlockStatement",
           "span": {
             "start": 42,
-            "end": 74
+            "end": 92
           },
           "ctxt": 0,
           "stmts": [
@@ -81,35 +81,50 @@
               "type": "ReturnStatement",
               "span": {
                 "start": 45,
-                "end": 72
+                "end": 90
               },
               "argument": {
                 "type": "ParenthesisExpression",
                 "span": {
                   "start": 52,
-                  "end": 72
+                  "end": 90
                 },
                 "expression": {
                   "type": "JSXElement",
                   "span": {
                     "start": 56,
-                    "end": 69
+                    "end": 87
                   },
                   "opening": {
                     "type": "JSXOpeningElement",
                     "name": {
-                      "type": "Identifier",
+                      "type": "JSXMemberExpression",
                       "span": {
                         "start": 57,
-                        "end": 58
+                        "end": 67
                       },
-                      "ctxt": 0,
-                      "value": "p",
-                      "optional": false
+                      "object": {
+                        "type": "Identifier",
+                        "span": {
+                          "start": 57,
+                          "end": 61
+                        },
+                        "ctxt": 0,
+                        "value": "Page",
+                        "optional": false
+                      },
+                      "property": {
+                        "type": "Identifier",
+                        "span": {
+                          "start": 62,
+                          "end": 67
+                        },
+                        "value": "index"
+                      }
                     },
                     "span": {
                       "start": 56,
-                      "end": 59
+                      "end": 68
                     },
                     "attributes": [],
                     "selfClosing": false,
@@ -119,14 +134,14 @@
                     {
                       "type": "JSXExpressionContainer",
                       "span": {
-                        "start": 59,
-                        "end": 65
+                        "start": 68,
+                        "end": 74
                       },
                       "expression": {
                         "type": "Identifier",
                         "span": {
-                          "start": 60,
-                          "end": 64
+                          "start": 69,
+                          "end": 73
                         },
                         "ctxt": 0,
                         "value": "text",
@@ -137,18 +152,33 @@
                   "closing": {
                     "type": "JSXClosingElement",
                     "span": {
-                      "start": 65,
-                      "end": 69
+                      "start": 74,
+                      "end": 87
                     },
                     "name": {
-                      "type": "Identifier",
+                      "type": "JSXMemberExpression",
                       "span": {
-                        "start": 67,
-                        "end": 68
+                        "start": 76,
+                        "end": 86
                       },
-                      "ctxt": 0,
-                      "value": "p",
-                      "optional": false
+                      "object": {
+                        "type": "Identifier",
+                        "span": {
+                          "start": 76,
+                          "end": 80
+                        },
+                        "ctxt": 0,
+                        "value": "Page",
+                        "optional": false
+                      },
+                      "property": {
+                        "type": "Identifier",
+                        "span": {
+                          "start": 81,
+                          "end": 86
+                        },
+                        "value": "index"
+                      }
                     }
                   }
                 }

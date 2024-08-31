@@ -169,8 +169,8 @@ pub fn traverse_jsx_tree(e: Ast::JSXElement, tab: i32) -> String {
 			buffer.push_str(&closing.clone().unwrap_or("".to_string()));
 			buffer.push('\n');
 		},
-		Tag::Component(_) => {
-			buffer.push_str(&as_indexed_child(0));
+		Tag::Component(c) => {
+			buffer.push_str(&as_indexed_child(c));
 			buffer.push('\n');
 		}
 	} 
@@ -178,12 +178,12 @@ pub fn traverse_jsx_tree(e: Ast::JSXElement, tab: i32) -> String {
 	return with_tabs(buffer, tab);
 }
 
-fn as_indexed_child(c: i32) -> String {
-	return format!("{{#[{c}]}}");
+fn as_indexed_child(name: String) -> String {
+	return format!("{{#[{name}]}}");
 }
 
 fn as_named_param(name: String) -> String {
-	return format!("{{% {name} }}");
+	return format!("{{{{{name}}}}}");
 }
 
 pub fn traverse_opening(e: Ast::JSXOpeningElement, tab: i32) -> Tag {
@@ -198,7 +198,6 @@ pub fn traverse_opening(e: Ast::JSXOpeningElement, tab: i32) -> Tag {
 	} else {
 		return Tag::Component(name);
 	}
-	
 }
 
 pub fn traverse_closing(e: Option<Ast::JSXClosingElement>) -> Option<String> {
@@ -230,7 +229,7 @@ pub fn parse_expr(e: Ast::Expr) -> String {
 pub fn parse_name(e: Ast::JSXElementName) -> String {
 	match e {
 		Ast::JSXElementName::Ident(ident) => ident.sym.to_string(),
-		_ => "unknown opening name".to_string(),
+		_ => "unknown opening name".to_string(), //Pages.index = MemberExpr
 	}
 }
 
@@ -297,7 +296,7 @@ pub fn get_sample_code() -> String {
 	let code1 = r#"
 export default function MyText({ text }) {
 	return (
-		<p>{text}</p>
+		<Page.index>{text}</Page.index>
 	)
 }	
 "#;

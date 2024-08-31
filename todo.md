@@ -1,4 +1,5 @@
 ## todo list
+- What is the objective of this project?
 ### v1
 - [x] watch multiple files
 - [x] parse JSX into AST
@@ -16,12 +17,10 @@
 	- [ ] traverse JSX expression
 	- [ ] generate unique ids for elements that use client side logic
 
+- identify condicional rendering
+- identify list rendering
+- identify nexted object props
 ---
-- generate component tree at run time
-- generate HTML templates at build time and populate them at run time
-
----
-- conditional rendering
-- listing
-- conditional attributes
-- conditional attribute values (class, style, etc.)
+### Decisions
+- parse JSX into handlebars templates: this makes viable to use this tool alongside a wide range of languages that has packages for parsing handlebars
+- start from javascript ecosystem because it is based on JSX anyway

@@ -1,6 +1,6 @@
 use std::rc::Rc;
 use hotwatch as hw;
-use serde_json;
+use serde_json::{self, json};
 use std::fs;
 use std::io::Error;
 use std::path;
@@ -12,6 +12,7 @@ use swc_ecma_parser as Parser;
 use swc_ecma_codegen as Gen;
 use swc_ecma_visit as Visit;
 use Swc::source_map as Sm;
+use handlebars::Handlebars;
 
 mod discover;
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -84,6 +85,8 @@ fn main() {
 		} else {
 			let parsed_html = discover::traverse_jsx_tree(jsx_expr.unwrap(), 0);
 			println!("{}", parsed_html.clone());
+			// let mut reg = Handlebars::new();
+			// println!("{}", reg.render_template(&parsed_html, &json!({"text": "some text"})).unwrap());
 			fs::write("./component.html", parsed_html).expect("Failed to write to file");
 		}
 		
@@ -115,89 +118,4 @@ fn main() {
         println!("{:#?}", program);
     }
     //watcher.run().expect("Failed to run");
-}
-
-fn parse_fn(node: Ast::FnExpr) {
-	let html_tags = [
-		"html", "head", "title", "body", //basic
-		"meta", "link", "base", //metadata
-		"h1", "h2", "h3", "h4", "h5", "h6", //headings
-		"p", "br", "hr", "strong", "em", "b", "i", "u", "s", "small", "mark", "bdi", "bdo", "cite", "del", "pre", "sub", "sup", //text
-		"ul", "ol", "li", "dl", "dt", "dd", "datalist", "menu", //lists
-		"a", "nav", //links
-		"img", "figure", "figcaption", "audio", "video", "source", "track", "area", "map", "picture", //media
-		"table", "tr", "td", "th", "thead", "tbody", "tfoot", "caption", //tables
-		"form", "input", "textarea", "button", "select", "option", "label", "fieldset", "optgroup", "legend", "time", //forms
-		"article", "section", "aside", "header", "footer", "main", "nav", "figure", "figcaption", "hgroup", //semantic
-		"div", "span", "iframe", "embed", "object", "param", "details", "summary", "abbr", "q", "blockquote", "code", "dialog", "progress", //common
-		"col", "colgroup", "data", "ins", "kbd", "meter", "noscript", "output", "samp", "rp", "rt", "ruby", "template", "var", "dfn", "wbr" // others
-	];
-	let name = if node.ident.is_none() {
-		"anonymous".to_owned()
-	} else {
-		node.ident.clone().unwrap().sym.as_str().to_owned()
-	};
-	if node.function.is_async {
-		panic!("async function is not supported");
-	}
-	if node.function.is_generator {
-		panic!("generator function is not supported");
-	}
-	println!("component: {}", name);
-	println!("params: {}", node.function.params.len());
-	if node.function.body.is_none() {
-		panic!("function body was not found");
-	}
-	for (i, stmt) in node.function.body.unwrap().stmts.iter_mut().enumerate() {
-		match stmt {
-			Ast::Stmt::Return(rtn) => {
-				if rtn.arg.is_none() {
-					println!("Expecting return value, got early return");
-				}
-				let mut expr = *rtn.arg.clone().unwrap();
-				if !expr.is_paren() {
-					println!("Warnning: use parentheses for return value");
-				} else {
-					expr = *expr.as_paren().unwrap().expr.clone();
-				}
-				match expr {
-					Ast::Expr::JSXElement(e) => {
-						match e.opening.name {
-							Ast::JSXElementName::Ident(ident) => {
-								let name = ident.sym.as_str();
-								let is_html_tag = html_tags.contains(&name);
-								if is_html_tag {
-									println!("tag: {}", name);
-									println!("{:?}", e.opening.attrs);
-								} else {
-									println!("child_component: {}", name);
-								}
-							},
-							_ => {
-								println!("Warnning: Unhandled jsx element name");
-							}
-						}
-					},
-					Ast::Expr::JSXFragment(_) => {
-						panic!("JSX Fragments are not supported; use an actual HTML tag instead"); //FIXME: can't be supported in template file
-					},
-					Ast::Expr::JSXEmpty(_) => {
-						println!("Warning: Unhandled jsx empty expression");
-					},
-					Ast::Expr::JSXMember(_) => {
-						println!("Warnning: Unhandled jsx member expression");
-					},
-					Ast::Expr::JSXNamespacedName(_) => {
-						println!("Warnning: Unhandled jsx namespaced name expression");
-					},
-					_ => {
-						println!("Warnning: Unhandled expression from return");
-					}
-				}
-			},
-			_ => {
-				println!("ignoring statement index = {i}, not implemented");
-			}
-		}
-	}
 }
