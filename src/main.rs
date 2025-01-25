@@ -58,13 +58,12 @@ const decrease = () => {
 }
 export default function MyComponent({ text }) {
 	return (
-		<div className="d-flex flex-col" disabled>
+		<div className="d-flex flex-col">
 			<h1>This is my counter!</h1>
-			<ControllBtn text="-" onClick={decrease} />
+			<button onClick={decrease}>-</button>
 			<p>{num.get()}</p>
-			<ControllBtn text="+" onClick={increase} />
+			<button onClick={increase}>+</button>
 			<p>{text}</p>
-			<span>{SOME_VAL}</span>
 		</div>
 	)	
 }
@@ -88,13 +87,13 @@ export default function MyComponent({ text }) {
         fs::write(path::Path::new("./ast.json"), json_string).expect("Failed to write to file");
 		// verify & separate
 		if !ast.is_module() {
-			panic!("Expecting at least 1 module statement of type default export");
+			panic!("Expecting at least one export default statement");
 		}
 		let mut module_item: Option<Ast::ModuleItem> = None;
 		let mut stmts: Vec<Ast::Stmt> = Vec::new();
 		for node in ast.clone().module().unwrap().body {
 			if !module_item.is_none() && node.is_module_decl() {
-				panic!("Expecting 1 module statement of type default export");
+				panic!("Expecting one export default statement");
 			}
 			if node.is_module_decl() {
 				module_item = Some(node);
@@ -105,21 +104,21 @@ export default function MyComponent({ text }) {
 		if module_item.is_some() {
 			let module_item = module_item.clone().unwrap().module_decl();
 			if module_item.is_none() {
-				panic!("Expecting 1 module statement of type default export");
+				panic!("Expecting one export default statement");
 			}
 			match module_item.unwrap() {
 				Ast::ModuleDecl::ExportDefaultDecl(decl) => {
 					match decl.decl {
 						Ast::DefaultDecl::Fn(fn_decl) => {
-							parse_fn(fn_decl);
+							parse_exported_component(fn_decl);
 						},
 						_ => {
-							panic!("Expecting 1 module statement of type default export");
+							panic!("Expecting one export default statement");
 						}
 					}
 				},
 				_ => {
-					panic!("Expecting 1 module statement of type default export");
+					panic!("Expecting one export default statement");
 				}
 			}
 		}
@@ -153,7 +152,7 @@ export default function MyComponent({ text }) {
     //watcher.run().expect("Failed to run");
 }
 
-fn parse_fn(node: Ast::FnExpr) {
+fn parse_exported_component(node: Ast::FnExpr) {
 	let html_tags = [
 		"html", "head", "title", "body", //basic
 		"meta", "link", "base", //metadata
@@ -168,7 +167,7 @@ fn parse_fn(node: Ast::FnExpr) {
 		"div", "span", "iframe", "embed", "object", "param", "details", "summary", "abbr", "q", "blockquote", "code", "dialog", "progress", //common
 		"col", "colgroup", "data", "ins", "kbd", "meter", "noscript", "output", "samp", "rp", "rt", "ruby", "template", "var", "dfn", "wbr" // others
 	];
-	let name = if node.ident.is_none() {
+	let component_name = if node.ident.is_none() {
 		"anonymous".to_owned()
 	} else {
 		node.ident.clone().unwrap().sym.as_str().to_owned()
@@ -179,7 +178,7 @@ fn parse_fn(node: Ast::FnExpr) {
 	if node.function.is_generator {
 		panic!("generator function is not supported");
 	}
-	println!("component: {}", name);
+	println!("component: {}", component_name);
 	println!("params: {}", node.function.params.len());
 	if node.function.body.is_none() {
 		panic!("function body was not found");
@@ -204,7 +203,23 @@ fn parse_fn(node: Ast::FnExpr) {
 								let is_html_tag = html_tags.contains(&name);
 								if is_html_tag {
 									println!("tag: {}", name);
-									println!("{:?}", e.opening.attrs);
+									for attr in e.opening.attrs {
+										match attr {
+											Ast::JSXAttrOrSpread::JSXAttr(attr) => {
+												match attr.name {
+													Ast::JSXAttrName::Ident(ident) => {
+														println!("attr: {}, value: {:?}", ident.sym.as_str(), attr.value);
+													}
+													_ => {
+														println!("Warnning: Unhandled jsx attribute - JSXNamespacedName");
+													}
+												}
+											},
+											_ => {
+												println!("Warnning: Unhandled jsx attribute - spread");
+											}
+										}
+									}
 								} else {
 									println!("child_component: {}", name);
 								}
